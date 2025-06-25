@@ -6,7 +6,7 @@ import { Provider } from "react-redux";
 import store from "./store";
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import Error from "./Error";
-import { rootLoader } from "./Loader.js";
+import { rootLoader } from "./loader.js";
 
 const router = createBrowserRouter([
   {
