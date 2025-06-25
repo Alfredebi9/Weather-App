@@ -156,19 +156,25 @@ function WeatherDisplay() {
     !error.includes("only contain letters")
   ) {
     return (
-      <main className="flex flex-col items-center justify-center min-h-[60vh] bg-gradient-to-r from-blue-500 to-purple-500 text-white">
-        <div className="bg-red-100 border border-red-300 rounded-xl shadow-lg px-8 py-8 flex flex-col items-center max-w-md w-full">
-          <span className="text-5xl mb-3">⚠️</span>
-          <h1 className="text-2xl font-bold text-red-700 mb-2">Error</h1>
-          <p>{error} Try another city</p>
-          <button
-            className="mt-6 px-5 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-semibold shadow transition text-sm sm:text-base lg:text-lg"
-            onClick={handleTryAgain}
-          >
-            Click to get Your Location
-          </button>
-        </div>
-      </main>
+    <main className="flex flex-col items-center justify-center min-h-[60vh] bg-gradient-to-r from-blue-500 to-purple-500 text-white">
+      <div className="bg-red-100 border border-red-300 rounded-xl shadow-lg px-8 py-8 flex flex-col items-center max-w-md w-full">
+        <span className="text-5xl mb-3">⚠️</span>
+        <h1 className="text-2xl font-bold text-red-700 mb-2">Error</h1>
+        <p>
+          {error}
+          <br />
+          <span className="text-blue-700">
+            Please enter your city name above to get the weather.
+          </span>
+        </p>
+        <button
+          className="mt-6 px-5 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-semibold shadow transition text-sm sm:text-base lg:text-lg"
+          onClick={handleTryAgain}
+        >
+          Click to get Your Location
+        </button>
+      </div>
+    </main>
     );
   }
 

@@ -64,7 +64,7 @@ export async function getCityFromCoords(latitude, longitude) {
 }
 
 // Get city info by city name using AccuWeather
-export async function getWeather(city) {
+export async function getWeather(city, returnAll = false) {
   if (!WEATHER_API_KEY) {
     throw new Error("Weather API key is not defined.");
   }
@@ -73,16 +73,16 @@ export async function getWeather(city) {
   }
   try {
     const res = await fetch(
-      `https://dataservice.accuweather.com/locations/v1/cities/search?q=${city}&apikey=${WEATHER_API_KEY}&language=${lang}`
+      `/api/locations/v1/cities/search?q=${city}&apikey=${WEATHER_API_KEY}&language=${lang}`
     );
     if (!res.ok) throw new Error("Network response was not ok.");
     const data = await res.json();
     if (!data || data.length === 0) {
       throw new Error("City not found.");
     }
-    return data[0];
+    return returnAll ? data : data[0];
   } catch (error) {
-    throw new Error("Error fetching weather data: " + city + error.message);
+    throw new Error("Error fetching weather data: " + city + " " + error.message);
   }
 }
 
@@ -96,7 +96,7 @@ export async function getWeatherByCoords(latitude, longitude) {
   }
   try {
     const res = await fetch(
-      `https://dataservice.accuweather.com/locations/v1/cities/geoposition/search?apikey=${WEATHER_API_KEY}&q=${latitude},${longitude}&language=${lang}`
+      `/api/locations/v1/cities/geoposition/search?apikey=${WEATHER_API_KEY}&q=${latitude},${longitude}&language=${lang}`
     );
     if (!res.ok) throw new Error("Network response was not ok.");
     const data = await res.json();
@@ -169,7 +169,7 @@ export async function getForecastByKey(city, latitude, longitude) {
       throw new Error("Location key not found for forecast.");
     }
     const res = await fetch(
-      `https://dataservice.accuweather.com/forecasts/v1/daily/5day/${locationKey}?apikey=${WEATHER_API_KEY}&language=${lang}`
+      `/api/forecasts/v1/daily/5day/${locationKey}?apikey=${WEATHER_API_KEY}&language=${lang}`
     );
     if (!res.ok) throw new Error("Network response was not ok.");
     const data = await res.json();
