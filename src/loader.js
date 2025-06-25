@@ -40,7 +40,6 @@ export async function rootLoader() {
 
     // Now always use the city name AccuWeather recognizes
     const forecast = await getForecastByKey(usedCity, latitude, longitude);
-    console.log(forecast);
     return {
       city: cityDetails.LocalizedName || city,
       country: cityDetails.Country?.LocalizedName || country,
@@ -53,4 +52,3 @@ export async function rootLoader() {
     throw new Error(error.message);
   }
 }
-

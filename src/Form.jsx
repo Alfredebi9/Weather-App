@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { setCity, setCountry, setError, setLoading } from "./locationSlice";
-import { getCity, getForecastByKey, getWeather } from "./geolocation";
+import { getCity, getWeather } from "./geolocation";
 
 function Form() {
   const [cityCache, setCityCache] = useState({});
@@ -164,7 +164,6 @@ function Form() {
       setSearchCity("");
       setSuggestions([]);
       setShowSuggestions(false);
-      console.log("City Forecast info:", await getForecastByKey(cityInfo.name));
     } catch (error) {
       console.error("Error fetching forecast:", error);
       dispatch(setError("Could not fetch forecast for the specified city."));

@@ -79,8 +79,6 @@ export async function getWeather(city, returnAll = false) {
     const encodedCity = encodeURIComponent(cleanedCity);
     const url = `/api/locations/v1/cities/search?apikey=${WEATHER_API_KEY}&q=${encodedCity}&language=${lang}`;
 
-    console.log("Fetching from:", url);
-
     const res = await fetch(url);
 
     if (!res.ok) throw new Error("Network response was not ok.");
