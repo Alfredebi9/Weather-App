@@ -2,7 +2,7 @@ import { WiDaySunny } from "react-icons/wi";
 
 function Loader() {
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-r from-blue-400 to-purple-500">
+    <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-r from-blue-400 to-purple-500 w-3/4">
       <WiDaySunny
         className="animate-spin-slow text-yellow-300 mb-6"
         size={80}
