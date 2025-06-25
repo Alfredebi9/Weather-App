@@ -1,4 +1,3 @@
-/* eslint-disable no-unused-vars */
 import { useEffect } from "react";
 import { useLoaderData } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
@@ -14,12 +13,12 @@ function App() {
   // console.log(loaderData);
   const loading = useSelector((state) => state.location.loading);
 
-  // useEffect(() => {
-  //   if (loaderData?.city && loaderData?.country) {
-  //     dispatch(setCity(loaderData.city));
-  //     dispatch(setCountry(loaderData.country));
-  //   }
-  // }, [dispatch, loaderData]);
+  useEffect(() => {
+    if (loaderData?.city && loaderData?.country) {
+      dispatch(setCity(loaderData.city));
+      dispatch(setCountry(loaderData.country));
+    }
+  }, [dispatch, loaderData]);
 
   return (
     <>

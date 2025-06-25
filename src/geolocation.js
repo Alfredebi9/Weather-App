@@ -82,7 +82,7 @@ export async function getWeather(city) {
     }
     return data[0];
   } catch (error) {
-    throw new Error("Error fetching weather data: " + error.message);
+    throw new Error("Error fetching weather data: " + city + error.message);
   }
 }
 
