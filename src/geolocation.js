@@ -1,3 +1,4 @@
+/* eslint-disable no-useless-escape */
 const WEATHER_API_KEY = import.meta.env.VITE_WEATHER_API_KEY;
 const GEOAPIFY_API_KEY = import.meta.env.VITE_GEOAPIFY_API_KEY;
 const lang = navigator.language || "en-US";
@@ -72,7 +73,10 @@ export async function getWeather(city, returnAll = false) {
     throw new Error("City name is required.");
   }
   try {
-    const encodedCity = encodeURIComponent(city);
+    // Remove everything after (and including) any special character: /, -, or ,
+    const cleanedCity = city.split(/[\/\-,]/)[0].trim();
+
+    const encodedCity = encodeURIComponent(cleanedCity);
     const url = `/api/locations/v1/cities/search?apikey=${WEATHER_API_KEY}&q=${encodedCity}&language=${lang}`;
 
     console.log("Fetching from:", url);
@@ -106,7 +110,6 @@ export async function getWeatherByCoords(latitude, longitude) {
     );
     if (!res.ok) throw new Error("Network response was not ok.");
     const data = await res.json();
-    console.log(data)
     if (!data || !data.Key) {
       throw new Error("City not found by coordinates.");
     }
