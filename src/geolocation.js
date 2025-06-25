@@ -1,25 +1,49 @@
 const WEATHER_API_KEY = import.meta.env.VITE_WEATHER_API_KEY;
 const GEOAPIFY_API_KEY = import.meta.env.VITE_GEOAPIFY_API_KEY;
+const lang = navigator.language || "en-US";
 
 // Get user location (lat/lon)
+// export async function getUserLocation() {
+//   return new Promise((resolve, reject) => {
+//     if (!navigator.geolocation) {
+//       reject(new Error("Geolocation is not supported by this browser."));
+//       return;
+//     }
+//     navigator.geolocation.getCurrentPosition(
+//       (position) => {
+//         resolve({
+//           latitude: position.coords.latitude,
+//           longitude: position.coords.longitude,
+//         });
+//       },
+//       (error) => {
+//         reject(new Error("Error obtaining location: " + error.message));
+//       }
+//     );
+//   });
+// }
+
 export async function getUserLocation() {
-  return new Promise((resolve, reject) => {
-    if (!navigator.geolocation) {
-      reject(new Error("Geolocation is not supported by this browser."));
-      return;
-    }
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        resolve({
-          latitude: position.coords.latitude,
-          longitude: position.coords.longitude,
-        });
-      },
-      (error) => {
-        reject(new Error("Error obtaining location: " + error.message));
-      }
+  if (!navigator.geolocation) {
+    throw new Error("Geolocation is not supported by this browser.");
+  }
+
+  const getPosition = () =>
+    new Promise((resolve, reject) =>
+      navigator.geolocation.getCurrentPosition(resolve, reject, {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 0,
+      })
     );
-  });
+
+  try {
+    const position = await getPosition();
+    const { latitude, longitude } = position.coords;
+    return {latitude, longitude};
+  } catch (error) {
+    throw new Error("Geolocation error: " + error.message);
+  }
 }
 
 // Get city and country from coordinates using Geoapify
@@ -27,24 +51,32 @@ export async function getCityFromCoords(latitude, longitude) {
   if (!latitude || !longitude) {
     throw new Error("Latitude and longitude are required.");
   }
+
   if (!GEOAPIFY_API_KEY) {
     throw new Error("Geoapify API key is not defined.");
   }
+
   try {
     const response = await fetch(
       `https://api.geoapify.com/v1/geocode/reverse?lat=${latitude}&lon=${longitude}&apiKey=${GEOAPIFY_API_KEY}`
     );
+
     if (!response.ok) throw new Error("Failed to fetch location info.");
+
     const data = await response.json();
+
     if (!data.features || data.features.length === 0) {
       throw new Error("No location features found for coordinates.");
     }
+
     const props = data.features[0].properties;
     const city =
       props.city || props.town || props.village || props.county || null;
     const country = props.country || props.country_code || null;
+
     if (!city || !country)
       throw new Error("Could not determine city or country from coordinates.");
+
     return { city, country };
   } catch (error) {
     throw new Error("Geoapify error: " + error.message);
@@ -60,8 +92,12 @@ export async function getWeather(city) {
     throw new Error("City name is required.");
   }
   try {
+    // for localHost
+    // const res = await fetch(
+    //   `/api/locations/v1/cities/search?q=${city}&apikey=${WEATHER_API_KEY}`
+    // );
     const res = await fetch(
-      `/api/locations/v1/cities/search?q=${city}&apikey=${WEATHER_API_KEY}`
+      `https://dataservice.accuweather.com/locations/v1/cities/search?q=${city}&apikey=${WEATHER_API_KEY}&language=${lang}`
     );
     if (!res.ok) throw new Error("Network response was not ok.");
     const data = await res.json();
@@ -84,7 +120,7 @@ export async function getWeatherByCoords(latitude, longitude) {
   }
   try {
     const res = await fetch(
-      `/api/locations/v1/cities/geoposition/search?apikey=${WEATHER_API_KEY}&q=${latitude},${longitude}`
+      `https://dataservice.accuweather.com/locations/v1/cities/geoposition/search?apikey=${WEATHER_API_KEY}&q=${latitude},${longitude}&language=${lang}`
     );
     if (!res.ok) throw new Error("Network response was not ok.");
     const data = await res.json();
@@ -105,7 +141,11 @@ export async function getCity(city, latitude, longitude) {
     if (city) {
       locationData = await getWeather(city);
       if (!locationData) {
-        errorMsg = `City "${city}" not found.`;
+        throw new Error(
+          city
+            ? `Could not find city "${city}" or fallback coordinates.`
+            : "Unable to find city by coordinates."
+        );
       }
     }
 
@@ -153,7 +193,7 @@ export async function getForecastByKey(city, latitude, longitude) {
       throw new Error("Location key not found for forecast.");
     }
     const res = await fetch(
-      `/api/forecasts/v1/daily/5day/${locationKey}?apikey=${WEATHER_API_KEY}`
+      `https://dataservice.accuweather.com/forecasts/v1/daily/5day/${locationKey}?apikey=${WEATHER_API_KEY}&language=${lang}`
     );
     if (!res.ok) throw new Error("Network response was not ok.");
     const data = await res.json();
