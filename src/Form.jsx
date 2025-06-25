@@ -184,8 +184,8 @@ function Form() {
           <input
             name="searchCity"
             type="search"
-            className="flex-1 border-2 border-blue-300 focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-200 rounded-md sm:px-3 sm:py-2 py-1.5 px-2 text-base placeholder:text-blue-200 bg-white/90 text-blue-900 transition w-full"
-            placeholder="Search city weather..."
+            className="flex-1 border-2 border-blue-300 focus:outline-none focus:border-grey-400 focus:ring-2 focus:ring-purple-200 rounded-md sm:px-3 sm:py-2 py-1.5 px-2 text-base placeholder:text-purple-600 bg-white/90 text-blue-900 transition w-full"
+            placeholder="Search city..."
             value={searchCity}
             onChange={handleInputChange}
             onKeyDown={handleKeyDown}
@@ -212,7 +212,7 @@ function Form() {
         </div>
         <button
           type="submit"
-          className="bg-purple-600 hover:bg-purple-700 text-white font-semibold cursor-pointer px-4 sm:py-2 py-2 text-sm sm:text-lg rounded-md shadow transition"
+          className="bg-stone-600 hover:bg-stone-700 text-white font-semibold cursor-pointer px-4 sm:py-2 py-2 text-sm sm:text-lg rounded-md shadow transition"
         >
           Search
         </button>

@@ -160,7 +160,7 @@ function WeatherDisplay() {
       <div className="bg-red-100 border border-red-300 rounded-xl shadow-lg px-8 py-8 flex flex-col items-center max-w-md w-full">
         <span className="text-5xl mb-3">⚠️</span>
         <h1 className="text-2xl font-bold text-red-700 mb-2">Error</h1>
-        <p>
+        <p className="text-stone-700 text-center">
           {error}
           <br />
           <span className="text-blue-700">
