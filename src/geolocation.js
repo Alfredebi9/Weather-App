@@ -121,7 +121,24 @@ export async function getCity(city, latitude, longitude) {
   let errorMsg = "";
   try {
     if (city) {
-      locationData = await getWeather(city);
+      try {
+        locationData = await getWeather(city);
+      } catch (error) {
+        const alternativeCity = city
+          .split(/[/-]/)
+          .map((part) => part.trim())
+          .filter(Boolean);
+        for (const altCity of alternativeCity) {
+          if (altCity && altCity.toLowerCase() !== city.toLowerCase()) {
+            try {
+              locationData = await getWeather(altCity);
+              if (locationData) break;
+            } catch {
+              throw new Error("alternativeCity", error);
+            }
+          }
+        }
+      }
       if (!locationData) {
         throw new Error(
           city

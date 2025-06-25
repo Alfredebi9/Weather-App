@@ -13,7 +13,7 @@ function App() {
   const loaderData = useLoaderData();
   const loading = useSelector((state) => state.location.loading);
   const data = useLoaderData();
-  console.log(data);
+  console.log(data, loaderData);
   useEffect(() => {
     if (loaderData?.city && loaderData?.country) {
       dispatch(setCity(loaderData.city));
