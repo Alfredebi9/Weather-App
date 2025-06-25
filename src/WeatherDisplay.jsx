@@ -77,27 +77,31 @@ function WeatherDisplay() {
     return roundTemp;
   }
 
-  const today = forecast.DailyForecasts[0];
+  const todayDateStr = new Date().toISOString().split("T")[0]; // "YYYY-MM-DD"
+  const todayForecast =
+    forecast.DailyForecasts.find((day) => day.Date.startsWith(todayDateStr)) ||
+    forecast.DailyForecasts[0]; // fallback to first if not found
+
   const headline = forecast.Headline;
 
   // Extract weather data
-  const minTemp = today?.Temperature?.Minimum?.Value;
-  const maxTemp = today?.Temperature?.Maximum?.Value;
+  const minTemp = todayForecast?.Temperature?.Minimum?.Value;
+  const maxTemp = todayForecast?.Temperature?.Maximum?.Value;
   const minTempCelsuis = fahrenheitToCelsius(minTemp);
   const maxTempCelsuis = fahrenheitToCelsius(maxTemp);
-  const tempUnit = today?.Temperature?.Minimum?.Unit;
-  const dayPhrase = today?.Day?.IconPhrase;
-  const nightPhrase = today?.Night?.IconPhrase;
-  const dayIcon = today?.Day?.Icon;
-  const nightIcon = today?.Night?.Icon;
-  const dayPrecip = today?.Day?.HasPrecipitation;
-  const nightPrecip = today?.Night?.HasPrecipitation;
-  const dayPrecipType = today?.Day?.PrecipitationType;
-  const nightPrecipType = today?.Night?.PrecipitationType;
-  const dayPrecipIntensity = today?.Day?.PrecipitationIntensity;
-  const nightPrecipIntensity = today?.Night?.PrecipitationIntensity;
+  const tempUnit = todayForecast?.Temperature?.Minimum?.Unit;
+  const dayPhrase = todayForecast?.Day?.IconPhrase;
+  const nightPhrase = todayForecast?.Night?.IconPhrase;
+  const dayIcon = todayForecast?.Day?.Icon;
+  const nightIcon = todayForecast?.Night?.Icon;
+  const dayPrecip = todayForecast?.Day?.HasPrecipitation;
+  const nightPrecip = todayForecast?.Night?.HasPrecipitation;
+  const dayPrecipType = todayForecast?.Day?.PrecipitationType;
+  const nightPrecipType = todayForecast?.Night?.PrecipitationType;
+  const dayPrecipIntensity = todayForecast?.Day?.PrecipitationIntensity;
+  const nightPrecipIntensity = todayForecast?.Night?.PrecipitationIntensity;
   const headlineText = headline?.Text || "";
-  const date = new Date(today.Date).toLocaleDateString(undefined, {
+  const date = new Date(todayForecast.Date).toLocaleDateString(undefined, {
     weekday: "long",
     year: "numeric",
     month: "long",
@@ -235,7 +239,7 @@ function WeatherDisplay() {
         </div>
         <div className="flex flex-col items-center gap-2">
           <a
-            href={today.Link}
+            href={todayForecast.Link}
             target="_blank"
             rel="noopener noreferrer"
             className="text-blue-600 underline"
