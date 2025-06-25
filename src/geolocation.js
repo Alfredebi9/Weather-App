@@ -72,7 +72,8 @@ export async function getWeather(city, returnAll = false) {
     throw new Error("City name is required.");
   }
   try {
-    const url = `/api/locations/v1/cities/search?apikey=${WEATHER_API_KEY}&q=${city}&language=${lang}`;
+    const encodedCity = encodeURIComponent(city);
+    const url = `/api/locations/v1/cities/search?apikey=${WEATHER_API_KEY}&q=${encodedCity}&language=${lang}`;
 
     console.log("Fetching from:", url);
 

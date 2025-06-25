@@ -91,16 +91,19 @@ function Form() {
   async function handleSearch(city) {
     const trimmedCity = city.trim();
 
+    // Remove any special characters except letters, spaces, commas, and hyphens
+    const cleanedCity = trimmedCity.replace(/[^a-zA-Z\s,-]/g, "");
+
     // Input validation
-    if (!trimmedCity) {
+    if (!cleanedCity) {
       dispatch(setError("Please enter a valid city name."));
       return;
     }
-    if (trimmedCity.length < 2) {
+    if (cleanedCity.length < 2) {
       dispatch(setError("City name must be at least 2 characters long."));
       return;
     }
-    if (!/^[a-zA-Z\s,]+$/.test(trimmedCity)) {
+    if (!/^[a-zA-Z\s,]+$/.test(cleanedCity)) {
       dispatch(
         setError("City name can only contain letters, spaces, and commas.")
       );
