@@ -119,7 +119,6 @@ function Form() {
     // Check if input city matches current state
     if (cityPart.toLowerCase() === cityName?.toLowerCase()) {
       setSearchCity("");
-      dispatch(setError("You are already viewing the weather for this city."));
       return;
     }
 
