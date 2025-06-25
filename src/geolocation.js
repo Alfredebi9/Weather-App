@@ -3,26 +3,6 @@ const GEOAPIFY_API_KEY = import.meta.env.VITE_GEOAPIFY_API_KEY;
 const lang = navigator.language || "en-US";
 
 // Get user location (lat/lon)
-// export async function getUserLocation() {
-//   return new Promise((resolve, reject) => {
-//     if (!navigator.geolocation) {
-//       reject(new Error("Geolocation is not supported by this browser."));
-//       return;
-//     }
-//     navigator.geolocation.getCurrentPosition(
-//       (position) => {
-//         resolve({
-//           latitude: position.coords.latitude,
-//           longitude: position.coords.longitude,
-//         });
-//       },
-//       (error) => {
-//         reject(new Error("Error obtaining location: " + error.message));
-//       }
-//     );
-//   });
-// }
-
 export async function getUserLocation() {
   if (!navigator.geolocation) {
     throw new Error("Geolocation is not supported by this browser.");
@@ -31,16 +11,16 @@ export async function getUserLocation() {
   const getPosition = () =>
     new Promise((resolve, reject) =>
       navigator.geolocation.getCurrentPosition(resolve, reject, {
-        enableHighAccuracy: true,
-        timeout: 10000,
-        maximumAge: 0,
+        enableHighAccuracy: false,
+        timeout: 20000,
+        maximumAge: 10000,
       })
     );
 
   try {
     const position = await getPosition();
     const { latitude, longitude } = position.coords;
-    return {latitude, longitude};
+    return { latitude, longitude };
   } catch (error) {
     throw new Error("Geolocation error: " + error.message);
   }
@@ -92,10 +72,6 @@ export async function getWeather(city) {
     throw new Error("City name is required.");
   }
   try {
-    // for localHost
-    // const res = await fetch(
-    //   `/api/locations/v1/cities/search?q=${city}&apikey=${WEATHER_API_KEY}`
-    // );
     const res = await fetch(
       `https://dataservice.accuweather.com/locations/v1/cities/search?q=${city}&apikey=${WEATHER_API_KEY}&language=${lang}`
     );
