@@ -72,9 +72,12 @@ export async function getWeather(city, returnAll = false) {
     throw new Error("City name is required.");
   }
   try {
-    const res = await fetch(
-      `/api/locations/v1/cities/search?apikey=${WEATHER_API_KEY}&q=${city}&language=${lang}`
-    );
+    const url = `/api/locations/v1/cities/search?apikey=${WEATHER_API_KEY}&q=${city}&language=${lang}`;
+
+    console.log("Fetching from:", url);
+
+    const res = await fetch(url);
+
     if (!res.ok) throw new Error("Network response was not ok.");
     const data = await res.json();
     if (!data || data.length === 0) {
