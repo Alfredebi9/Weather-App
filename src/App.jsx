@@ -21,7 +21,7 @@ function App() {
     }
   }, [dispatch, loaderData]);
 
-  if (data.error) {
+  if (data.error || location.error) {
     return (
       <main className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-r from-blue-100 to-purple-100">
         <div className="bg-white border border-red-200 rounded-xl shadow-lg px-8 py-10 flex flex-col items-center max-w-md w-full">
