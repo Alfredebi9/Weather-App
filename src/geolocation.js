@@ -73,7 +73,7 @@ export async function getWeather(city, returnAll = false) {
   }
   try {
     const res = await fetch(
-      `/api/locations/v1/cities/search?q=${city}&apikey=${WEATHER_API_KEY}&language=${lang}`
+      `/api/locations/v1/cities/search?apikey=${WEATHER_API_KEY}&q=${city}&language=${lang}`
     );
     if (!res.ok) throw new Error("Network response was not ok.");
     const data = await res.json();
@@ -82,7 +82,9 @@ export async function getWeather(city, returnAll = false) {
     }
     return returnAll ? data : data[0];
   } catch (error) {
-    throw new Error("Error fetching weather data: " + city + " " + error.message);
+    throw new Error(
+      "Error fetching weather data: " + city + " " + error.message
+    );
   }
 }
 
