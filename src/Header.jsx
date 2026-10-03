@@ -1,14 +1,13 @@
 import { useSelector } from "react-redux";
 import Form from "./Form";
+import { getErrorMessage, isValidationError } from "./errors";
 
 function Header() {
   const { error } = useSelector((state) => state.location);
 
-  const isValidationError =
-    error &&
-    (error.includes("enter a city") ||
-      error.includes("at least 3 characters") ||
-      error.includes("only contain letters"));
+  // Input-validation problems are shown inline here (so the user keeps context
+  // while typing). Location/network problems are shown in the main view.
+  const showValidationError = isValidationError(error);
 
   return (
     <header className="w-full bg-gradient-to-r from-blue-600 to-purple-600 py-6 shadow-md">
@@ -21,10 +20,13 @@ function Header() {
         </h1>
         <Form />
       </div>
-      {isValidationError && (
-        <div className="max-w-2xl mx-auto mt-2 text-center">
-          <span className="text-red-600 bg-red-100 px-3 py-1 rounded">
-            {error}
+      {showValidationError && (
+        <div className="max-w-2xl mx-auto mt-2 px-4 text-center">
+          <span
+            className="inline-block text-red-700 bg-red-100 border border-red-200 px-3 py-1 rounded"
+            role="alert"
+          >
+            {getErrorMessage(error)}
           </span>
         </div>
       )}

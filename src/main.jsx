@@ -6,6 +6,7 @@ import { Provider } from "react-redux";
 import store from "./store";
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import Error from "./Error";
+import { FullscreenLoading } from "./Loading";
 import { rootLoader } from "./loader.js";
 
 const router = createBrowserRouter([
@@ -13,6 +14,9 @@ const router = createBrowserRouter([
     path: "/",
     element: <App />,
     loader: rootLoader,
+    // Shown while the root loader runs (e.g. the first geolocation lookup) so
+    // the app never renders a blank screen on initial load.
+    HydrateFallback: FullscreenLoading,
     errorElement: <Error />,
   },
 ]);

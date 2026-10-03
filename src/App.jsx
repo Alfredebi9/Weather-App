@@ -1,50 +1,57 @@
 import { useEffect } from "react";
 import { useLoaderData } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
-import { setCity, setCountry } from "./locationSlice";
+import { setCity, setCoordinates, setCountry } from "./locationSlice";
 import Forecast from "./Forecast";
 import Header from "./Header";
 import WeatherDisplay from "./WeatherDisplay";
-import Loader from "./Loading";
-import Form from "./Form";
+import Loading from "./Loading";
+import Error from "./Error";
+import { toUserError } from "./errors";
 
 function App() {
   const dispatch = useDispatch();
   const loaderData = useLoaderData();
   const loading = useSelector((state) => state.location.loading);
-  const data = useLoaderData();
+  const forecast = useSelector((state) => state.location.forecast);
+  const reduxCity = useSelector((state) => state.location.city);
+
+  // Seed the store with the location the loader resolved.
   useEffect(() => {
-    if (loaderData?.city && loaderData?.country) {
+    if (loaderData?.city) {
       dispatch(setCity(loaderData.city));
+    }
+    if (loaderData?.country) {
       dispatch(setCountry(loaderData.country));
+    }
+    if (loaderData?.latitude != null && loaderData?.longitude != null) {
+      dispatch(
+        setCoordinates({
+          latitude: loaderData.latitude,
+          longitude: loaderData.longitude,
+        })
+      );
     }
   }, [dispatch, loaderData]);
 
-  if (data.error || location.error) {
-    return (
-      <main className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-r from-blue-100 to-purple-100">
-        <div className="bg-white border border-red-200 rounded-xl shadow-lg px-8 py-10 flex flex-col items-center max-w-md w-full">
-          <span className="text-5xl mb-3 text-red-500">⚠️</span>
-          <h1 className="text-2xl font-bold text-red-700 mb-2">Oops!</h1>
-          <p className="text-center text-red-600 mb-4">
-            {data.error}
-            <br />
-            <span className="text-gray-700">
-              Please enter your city below to get the weather.
-            </span>
-          </p>
-          <Form />
-        </div>
-      </main>
-    );
+  // If we could not determine a location at all, show a friendly error view
+  // (with a search form) so the user can keep going. Once they pick a city,
+  // `reduxCity` becomes set and we render the normal app instead.
+  const hasCity = Boolean(loaderData?.city) || Boolean(reduxCity);
+  if (loaderData?.error && !hasCity) {
+    const userError = toUserError(loaderData.error);
+    return <Error message={userError.message} />;
   }
+
+  // Blocking full-screen loading is ONLY used when there is no weather to show.
+  // Background refreshes keep the existing weather visible (WeatherDisplay
+  // shows a subtle indicator instead).
+  const showBlockingLoader = loading && !forecast;
 
   return (
     <>
-      {loading && (
-        <div className="fixed inset-0 z-50 w-full flex items-center justify-center bg-black/40">
-          <Loader />
-        </div>
+      {showBlockingLoader && (
+        <Loading variant="overlay" label="Fetching the latest weather..." />
       )}
       <div>
         <Header />

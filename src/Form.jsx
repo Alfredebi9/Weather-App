@@ -1,7 +1,14 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { setCity, setCountry, setError, setLoading } from "./locationSlice";
-import { getCity, getWeather } from "./geolocation";
+import {
+  setCity,
+  setCoordinates,
+  setCountry,
+  setError,
+  setForecast,
+} from "./locationSlice";
+import { getCity, searchCities } from "./weatherApi";
+import { validationError, toUserError } from "./errors";
 
 function Form() {
   const [cityCache, setCityCache] = useState({});
@@ -9,165 +16,173 @@ function Form() {
   const [suggestions, setSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [activeSuggestion, setActiveSuggestion] = useState(0);
+  const [loadingSuggestions, setLoadingSuggestions] = useState(false);
+  const [searching, setSearching] = useState(false);
   const dispatch = useDispatch();
   const { city: cityName } = useSelector((state) => state.location);
+  const activeRequest = useRef(0);
 
-  // Debounce search for suggestions
+  // Debounced city suggestions (Open-Meteo forward geocoding).
   useEffect(() => {
+    const term = searchCity.trim();
+    const requestId = ++activeRequest.current;
+
+    if (term.length < 2) {
+      setSuggestions([]);
+      setShowSuggestions(false);
+      setLoadingSuggestions(false);
+      return;
+    }
+
+    setLoadingSuggestions(true);
     const timer = setTimeout(async () => {
-      if (searchCity.trim().length >= 2) {
-        try {
-          const data = await getWeather(searchCity, true); // <--- pass true here
-          if (data && Array.isArray(data)) {
-            const uniqueCities = data.reduce((acc, current) => {
-              const cityKey =
-                `${current.LocalizedName}, ${current.Country.LocalizedName}`.toLowerCase();
-              if (
-                !acc.some(
-                  (item) =>
-                    `${item.LocalizedName}, ${item.Country.LocalizedName}`.toLowerCase() ===
-                    cityKey
-                )
-              ) {
-                acc.push(current);
-              }
-              return acc;
-            }, []);
-            setSuggestions(uniqueCities.slice(0, 5));
-            setShowSuggestions(true);
-          }
-        } catch (error) {
-          console.error("Error fetching suggestions:", error);
-          setSuggestions([]);
+      try {
+        const results = await searchCities(term, 5);
+        // Ignore stale responses from earlier keystrokes.
+        if (requestId !== activeRequest.current) return;
+
+        const unique = [];
+        for (const place of results) {
+          const key = `${place.name}|${place.admin1}|${place.country}`.toLowerCase();
+          const seen = unique.some(
+            (item) =>
+              `${item.name}|${item.admin1}|${item.country}`.toLowerCase() === key
+          );
+          if (!seen) unique.push(place);
         }
-      } else {
-        setSuggestions([]);
-        setShowSuggestions(false);
+        setSuggestions(unique.slice(0, 5));
+        setShowSuggestions(true);
+      } catch {
+        // Suggestions are best-effort; stay silent so we don't interrupt typing.
+        if (requestId === activeRequest.current) setSuggestions([]);
+      } finally {
+        if (requestId === activeRequest.current) setLoadingSuggestions(false);
       }
-    }, 200); // 200ms debounce delay
+    }, 200);
 
     return () => clearTimeout(timer);
   }, [searchCity]);
+
   function handleInputChange(e) {
     const value = e.target.value;
     setSearchCity(value);
-    // Clear error if input is valid
-    if (value.trim().length >= 3 && /^[a-zA-Z\s]+$/.test(value.trim())) {
+    setActiveSuggestion(0);
+    // Clear a previous validation message once the input looks valid again.
+    if (value.trim().length >= 2 && /^[a-zA-Z\s, -]+$/.test(value.trim())) {
       dispatch(setError(null));
     }
   }
 
-  function handleSuggestionClick(suggestion) {
-    const cityName = suggestion.LocalizedName;
-    const countryName = suggestion.Country.LocalizedName;
-
-    setSearchCity(`${cityName}, ${countryName}`);
+  // Move the app to a resolved place. The forecast is cleared because it
+  // belongs to the previous location, which makes WeatherDisplay show the
+  // blocking loader until the new data arrives.
+  function applyLocation(place) {
+    dispatch(setCity(place.name || ""));
+    dispatch(setCountry(place.country || ""));
+    dispatch(
+      setCoordinates({
+        latitude: place.latitude,
+        longitude: place.longitude,
+      })
+    );
+    dispatch(setForecast(null));
+    dispatch(setError(null));
+    setSearchCity("");
     setSuggestions([]);
     setShowSuggestions(false);
-    handleSearch(cityName);
+  }
+
+  function handleSuggestionClick(suggestion) {
+    setSearchCity(suggestion.name);
+    setSuggestions([]);
+    setShowSuggestions(false);
+    applyLocation(suggestion);
   }
 
   function handleKeyDown(e) {
-    // Arrow down
     if (e.key === "ArrowDown") {
       e.preventDefault();
       setActiveSuggestion((prev) =>
         prev < suggestions.length - 1 ? prev + 1 : prev
       );
-    }
-    // Arrow up
-    else if (e.key === "ArrowUp") {
+    } else if (e.key === "ArrowUp") {
       e.preventDefault();
       setActiveSuggestion((prev) => (prev > 0 ? prev - 1 : 0));
-    }
-    // Enter
-    else if (e.key === "Enter" && showSuggestions && suggestions.length > 0) {
+    } else if (e.key === "Enter" && showSuggestions && suggestions.length > 0) {
       e.preventDefault();
-      const selected = suggestions[activeSuggestion];
-      handleSuggestionClick(selected);
+      handleSuggestionClick(suggestions[activeSuggestion]);
     }
   }
 
   async function handleSearch(city) {
     const trimmedCity = city.trim();
-    // Remove any special characters except letters, spaces, commas, and hyphens
+    // Keep only letters, spaces, commas, and hyphens.
     const cleanedCity = trimmedCity.replace(/[^a-zA-Z\s,-]/g, "");
 
-    // Input validation
     if (!cleanedCity) {
-      dispatch(setError("Please enter a valid city name."));
+      dispatch(setError(validationError("Please enter a valid city name.")));
       return;
     }
     if (cleanedCity.length < 2) {
-      dispatch(setError("City name must be at least 2 characters long."));
+      dispatch(
+        setError(validationError("City name must be at least 2 characters long."))
+      );
       return;
     }
     if (!/^[a-zA-Z\s, -]+$/.test(cleanedCity)) {
       dispatch(
         setError(
-          "City name can only contain letters, spaces, commas, and hyphens."
+          validationError(
+            "City name can only contain letters, spaces, commas, and hyphens."
+          )
         )
       );
       return;
     }
 
-    // Extract city name if format is "City, Country"
-    const [cityPart] = trimmedCity.split(",").map((part) => part.trim());
-    const cacheKey = cityPart.toLowerCase();
-    const cachedData = cityCache[cacheKey];
+    const [cityPart, countryPart] = trimmedCity
+      .split(",")
+      .map((part) => part.trim());
+    const cacheKey = `${cityPart}|${countryPart || ""}`.toLowerCase();
 
-    // Check if input city matches current state
+    // Nothing changed: keep the current city.
     if (cityPart.toLowerCase() === cityName?.toLowerCase()) {
       setSearchCity("");
+      dispatch(setError(null));
       return;
     }
 
-    // cache timeout for 30 minutes
+    // Cache resolved places for 30 minutes so repeat searches are instant.
     const cacheTimeout = 30 * 60 * 1000;
-
+    const cachedData = cityCache[cacheKey];
     if (cachedData && Date.now() - cachedData.timestamp < cacheTimeout) {
-      dispatch(setLoading(true));
-      dispatch(setCity(cachedData.cityInfo.name));
-      dispatch(setCountry(cachedData.cityInfo.country));
-      setSearchCity("");
-      setSuggestions([]);
-      setShowSuggestions(false);
-      dispatch(setLoading(false));
+      applyLocation(cachedData.place);
       return;
     }
 
     try {
-      dispatch(setLoading(true));
+      setSearching(true);
       dispatch(setError(null));
 
-      const cityInfo = await getCity(cityPart);
-
-      if (!cityInfo) {
-        dispatch(setError("City not found. Please try another name."));
-        dispatch(setLoading(false));
+      const query = countryPart ? `${cityPart}, ${countryPart}` : cityPart;
+      const place = await getCity(query);
+      if (!place) {
+        dispatch(
+          setError(validationError("City not found. Please try another name."))
+        );
         return;
       }
 
-      // Update cache with new data
       setCityCache((prevCache) => ({
         ...prevCache,
-        [cacheKey]: {
-          cityInfo,
-          timestamp: Date.now(),
-        },
+        [cacheKey]: { place, timestamp: Date.now() },
       }));
 
-      // Update state
-      dispatch(setCity(cityInfo.name));
-      dispatch(setCountry(cityInfo.country));
-      setSearchCity("");
-      setSuggestions([]);
-      setShowSuggestions(false);
+      applyLocation(place);
     } catch (error) {
-      console.error("Error fetching forecast:", error);
-      dispatch(setError("Could not fetch forecast for the specified city."));
+      dispatch(setError(toUserError(error)));
     } finally {
-      dispatch(setLoading(false));
+      setSearching(false);
     }
   }
 
@@ -184,27 +199,37 @@ function Form() {
           <input
             name="searchCity"
             type="search"
-            className="flex-1 border-2 border-blue-300 focus:outline-none focus:border-grey-400 focus:ring-2 focus:ring-purple-200 rounded-md sm:px-3 sm:py-2 py-1.5 px-2 text-base placeholder:text-purple-600 bg-white/90 text-blue-900 transition w-full"
+            className="flex-1 border-2 border-blue-300 focus:outline-none focus:border-gray-400 focus:ring-2 focus:ring-purple-200 rounded-md sm:px-3 sm:py-2 py-1.5 px-2 text-base placeholder:text-purple-600 bg-white/90 text-blue-900 transition w-full"
             placeholder="Search city..."
             value={searchCity}
             onChange={handleInputChange}
             onKeyDown={handleKeyDown}
             aria-label="Search city"
             autoComplete="off"
-            onFocus={() => setShowSuggestions(true)}
+            onFocus={() => {
+              if (suggestions.length > 0) setShowSuggestions(true);
+            }}
             onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
           />
-          {showSuggestions && suggestions.length > 0 && (
+          {showSuggestions && (loadingSuggestions || suggestions.length > 0) && (
             <ul className="absolute z-10 mt-1 w-full bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto">
+              {loadingSuggestions && (
+                <li className="px-4 py-2 text-gray-500 text-sm">
+                  Searching cities...
+                </li>
+              )}
               {suggestions.map((suggestion, index) => (
                 <li
-                  key={`${suggestion.Key}-${index}`}
+                  key={`${suggestion.id}-${index}`}
                   className={`px-4 py-2 hover:bg-purple-100 cursor-pointer ${
                     index === activeSuggestion ? "bg-purple-100" : ""
                   }`}
+                  onMouseDown={(e) => e.preventDefault()}
                   onClick={() => handleSuggestionClick(suggestion)}
                 >
-                  {suggestion.LocalizedName}, {suggestion.Country.LocalizedName}
+                  {suggestion.name}
+                  {suggestion.admin1 ? `, ${suggestion.admin1}` : ""}
+                  {suggestion.country ? `, ${suggestion.country}` : ""}
                 </li>
               ))}
             </ul>
@@ -212,9 +237,10 @@ function Form() {
         </div>
         <button
           type="submit"
-          className="bg-stone-600 hover:bg-stone-700 text-white font-semibold cursor-pointer px-4 sm:py-2 py-2 text-sm sm:text-lg rounded-md shadow transition"
+          disabled={searching}
+          className="bg-stone-600 hover:bg-stone-700 disabled:opacity-60 disabled:cursor-not-allowed text-white font-semibold cursor-pointer px-4 sm:py-2 py-2 text-sm sm:text-lg rounded-md shadow transition"
         >
-          Search
+          {searching ? "..." : "Search"}
         </button>
       </form>
     </div>

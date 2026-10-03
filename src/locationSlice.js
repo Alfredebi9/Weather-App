@@ -3,6 +3,8 @@ import { createSlice } from "@reduxjs/toolkit";
 const initialState = {
   city: "",
   country: "",
+  latitude: null,
+  longitude: null,
   loading: false,
   error: null,
   forecast: null,
@@ -24,6 +26,10 @@ const locationSlice = createSlice({
       }
       state.country = action.payload;
     },
+    setCoordinates: (state, action) => {
+      state.latitude = action.payload.latitude;
+      state.longitude = action.payload.longitude;
+    },
     setLoading: (state, action) => {
       state.loading = action.payload;
     },
@@ -36,6 +42,12 @@ const locationSlice = createSlice({
   },
 });
 
-export const { setCity, setCountry, setLoading, setForecast,setError } =
-  locationSlice.actions;
+export const {
+  setCity,
+  setCountry,
+  setCoordinates,
+  setLoading,
+  setForecast,
+  setError,
+} = locationSlice.actions;
 export default locationSlice.reducer;

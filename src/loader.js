@@ -1,54 +1,37 @@
-import {
-  getUserLocation,
-  getCityFromCoords,
-  getWeather,
-  getWeatherByCoords,
-  getForecastByKey,
-} from "./geolocation";
+import { getCityFromCoords, getUserLocation } from "./weatherApi";
 
+// Root loader: resolves the visitor's coordinates before the app renders and,
+// when possible, a human-readable city/country label via reverse geocoding.
+//
+// The forecast itself is fetched by <WeatherDisplay /> straight from the
+// coordinates, so a reverse-geocoding failure only costs us the label — the
+// weather still loads. Only a geolocation failure is treated as an error.
 export async function rootLoader() {
   try {
-    // Get user's coordinates
     const { latitude, longitude } = await getUserLocation();
 
-    // Get city and country from coordinates
-    const cityObject = await getCityFromCoords(latitude, longitude);
-    if (!cityObject) throw new Error("Could not get city from coordinates.");
-    const { city, country } = cityObject;
-
-    // get weatherInfo using city name
-    let cityDetails = null;
-    let usedCity = city;
-    if (city) {
-      cityDetails = await getWeather(city);
+    let city = "";
+    let country = "";
+    try {
+      const place = await getCityFromCoords(latitude, longitude);
+      city = place.city;
+      country = place.country;
+    } catch (labelError) {
+      // Non-fatal: we can still show weather for these coordinates.
+      console.warn(
+        "Could not resolve a place name for your coordinates:",
+        labelError
+      );
     }
 
-    // Fallback: If cityDetails is null, try by coordinates
-    if (!cityDetails) {
-      cityDetails = await getWeatherByCoords(latitude, longitude);
-
-      //update usedCity to the one AccuWeather recognizes if fallback works,
-      if (cityDetails && cityDetails.LocalizedName) {
-        usedCity = cityDetails.LocalizedName;
-      }
-    }
-
-    // If still no cityDetails, throw error
-    if (!cityDetails) {
-      throw new Error("Unable to find weather information for your location.");
-    }
-
-    // Now always use the city name AccuWeather recognizes
-    const forecast = await getForecastByKey(usedCity, latitude, longitude);
-    return {
-      city: cityDetails.LocalizedName || city,
-      country: cityDetails.Country?.LocalizedName || country,
-      latitude,
-      longitude,
-      cityInfo: cityDetails,
-      forecast,
-    };
+    return { city, country, latitude, longitude };
   } catch (error) {
-    throw new Error(error.message);
+    return {
+      city: "",
+      country: "",
+      latitude: null,
+      longitude: null,
+      error: error?.message || "Could not determine your location.",
+    };
   }
 }
